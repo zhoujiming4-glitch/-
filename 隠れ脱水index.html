@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>#隠れ脱水チェック</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(180deg, #6fc7ff, #f5fbff);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        /* 背景の雨・水滴エフェクト */
+        .drop {
+            position: fixed;
+            top: -20px;
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: fall linear infinite;
+            pointer-events: none;
+        }
+        @keyframes fall {
+            to { transform: translateY(110vh); }
+        }
+        /* レイアウト */
+        .wrap {
+            max-width: 430px;
+            margin: auto;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        .card {
+            background: #fff;
+            border-radius: 22px;
+            padding: 24px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            margin-top: 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #0a78d6;
+            font-size: 24px;
+            margin-top: 0;
+        }
+        h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        /* アニメーション */
+        .q {
+            display: none;
+        }
+        .q.active {
+            display: block;
+            animation: f .4s ease-out;
+        }
+        @keyframes f {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        /* ボタン & 選択肢 */
+        button {
+            width: 100%;
+            padding: 14px;
+            border: 0;
+            border-radius: 12px;
+            background: #0a78d6;
+            color: #fff;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #0861ad;
+        }
+        .opt {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            padding: 14px;
+            border: 1px solid #bde1ff;
+            border-radius: 12px;
+            cursor: pointer;
+            background: #fcfdfe;
+            transition: background 0.2s;
+        }
+        .opt:hover {
+            background: #f0f8ff;
+        }
+        .opt input {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        /* 結果画面 */
+        #res {
+            display: none;
+            text-align: center;
+        }
+        .ring {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            margin: 20px auto;
+            background: conic-gradient(#0a78d6 calc(var(--p) * 1%), #dcefff 0);
+            display: grid;
+            place-items: center;
+        }
+        .ring b {
+            background: #fff;
+            width: 138px;
+            height: 138px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 28px;
+            color: #0a78d6;
+        }
+        .small {
+            color: #666;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .btn-sub {
+            background: #fff;
+            color: #0a78d6;
+            border: 1px solid #0a78d6;
+            margin-top: 10px;
+        }
+        .btn-sub:hover {
+            background: #f0f8ff;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    // 背景の水滴を生成
+    for(let i=0; i<40; i++){
+        let d = document.createElement('div');
+        d.className = 'drop';
+        d.style.left = Math.random() * 100 + 'vw';
+        d.style.animationDuration = 3 + Math.random() * 5 + 's';
+        d.style.animationDelay = Math.random() * 5 + 's';
+        document.body.appendChild(d);
+    }
+</script>
+
+<div class="wrap">
+    <div class="card">
+        <h1>#隠れ脱水チェック</h1>
+        
+        <div id="quiz"></div>
+
+        <div id="res">
+            <h2 id="title"></h2>
+            <div class="ring" id="ring" style="--p:0">
+                <b id="pct">0%</b>
+            </div>
+            <p id="msg" style="font-weight: bold; margin-bottom: 24px;"></p>
+            <p><b>#隠れ脱水を噛み砕け！</b></p>
+            <button onclick="copyResult()">結果をコピー</button>
+            <button class="btn-sub" onclick="location.reload()">もう一度診断</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const qs = [
+    '今日500mL以上まだ飲んでいない',
+    '口や唇が乾いている',
+    'エアコンの効いた部屋に3時間以上いた',
+    '今日は汗をかいた',
+    '尿の色が濃い',
+    '少しぼーっとする',
+    'のどが渇いてから飲む'
+];
+
+let i = 0, s = 0;
+const quiz = document.getElementById('quiz');
+const res = document.getElementById('res');
+const ring = document.getElementById('ring');
+const pct = document.getElementById('pct');
+const title = document.getElementById('title');
+const msg = document.getElementById('msg');
+
+function render() {
+    if (i >= qs.length) return finish();
+    quiz.innerHTML = `
+        <div class="q active">
+            <h3>Q${i + 1}</h3>
+            <p style="font-size: 18px; margin: 20px 0;">${qs[i]}</p>
+            <label class="opt"><input type="radio" name="a" value="1"> はい</label>
+            <label class="opt"><input type="radio" name="a" value="0" checked> いいえ</label>
+            <button onclick="next()" style="margin-top: 15px;">次へ</button>
+            <p class="small">${i + 1} / ${qs.length}</p>
+        </div>
+    `;
+}
+
+function next() {
+    s += +document.querySelector('input[name="a"]:checked').value;
+    i++;
+    render();
+}
+
+function finish() {
+    quiz.style.display = 'none';
+    res.style.display = 'block';
+    let r = Math.round(s / qs.length * 100);
+    ring.style.setProperty('--p', r);
+    pct.textContent = r + '%';
+    
+    if (s <= 2) {
+        title.textContent = '🟢 安心';
+        msg.textContent = '水分補給を続けよう！';
+    } else if (s <= 4) {
+        title.textContent = '🟡 予備軍';
+        msg.textContent = '隠れ脱水の可能性。今のうちに水分・電解質補給！';
+    } else {
+        title.textContent = '🔴 要注意';
+        msg.textContent = 'リスク高め。早めの水分補給と休憩を。';
+    }
+}
+
+function copyResult() {
+    const text = `#隠れ脱水を噛み砕け！ 今日の診断結果は【${title.textContent}（リスク: ${pct.textContent}）】でした💧`;
+    navigator.clipboard.writeText(text).then(() => {
+        alert('結果をクリップボードにコピーしました！');
+    }).catch(() => {
+        alert('コピーに失敗しました。お手数ですが手動でコピーしてください。');
+    });
+}
+
+// 初期実行
+render();
+</script>
+
+</body>
+</html>
